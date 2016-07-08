@@ -8,6 +8,7 @@ namespace Peach\Oppwa\Cards;
 use GuzzleHttp\Exception\RequestException;
 use Peach\Oppwa\Client;
 use Peach\Oppwa\ClientInterface;
+use Peach\Oppwa\ResponseJson;
 
 /**
  * Class Store
@@ -29,7 +30,6 @@ class Store extends AbstractCard implements ClientInterface
     public function __construct(Client $client)
     {
         $this->client = $client;
-        parent::__construct();
     }
 
     /**
@@ -52,9 +52,9 @@ class Store extends AbstractCard implements ClientInterface
                 'form_params' => $this->getParams()
             ]);
 
-            return \GuzzleHttp\json_decode((string)$response->getBody());
+            return new ResponseJson((string)$response->getBody(), true);
         } catch (RequestException $e) {
-            return \GuzzleHttp\json_decode($e->getResponse()->getBody());
+            return new ResponseJson((string)$e->getResponse()->getBody(), false);
         }
     }
 

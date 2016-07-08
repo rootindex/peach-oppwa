@@ -5,6 +5,8 @@
 
 namespace Peach\Oppwa\Cards;
 
+use Inacho\CreditCard;
+
 /**
  * Class AbstractCard
  * @package Peach\Oppwa\Cards
@@ -12,12 +14,8 @@ namespace Peach\Oppwa\Cards;
 abstract class AbstractCard
 {
     const EXCEPTION_CARD_INVALID = 400;
-    const EXCEPTION_CARD_BRAND_INVALID = 401;
-    const EXCEPTION_CARD_NUMBER_INVALID = 402;
-    const EXCEPTION_CARD_HOLDER_INVALID = 403;
-    const EXCEPTION_CARD_EXPIRE_YEAR_INVALID = 404;
-    const EXCEPTION_CARD_EXPIRE_MONTH_INVALID = 405;
-    const EXCEPTION_CARD_CVV_INVALID = 406;
+    const EXCEPTION_CARD_VAR_EMPTY = 400;
+    const EXCEPTION_CARD_CVV_INVALID = 400;
 
     private $cardBrand;
     private $cardNumber;
@@ -27,40 +25,68 @@ abstract class AbstractCard
     private $cardCvv;
 
     /**
-     * AbstractCard constructor.
-     */
-    public function __construct()
-    {
-        
-    }
-
-    /**
      * Check if card is valid
      *
      * @throws \Exception
      */
     public function isCardDetailsValid()
     {
-        if (empty($this->cardBrand)) {
-            throw new \Exception("Card Brand not valid", self::EXCEPTION_CARD_BRAND_INVALID);
+        $cardVariables = ['cardBrand', 'cardNumber', 'cardHolder', 'cardExpiryMonth', 'cardExpiryYear', 'cardCvv'];
+
+        // check for any empty variables
+        foreach ($cardVariables as $cardVariable) {
+            if (empty($this->$cardVariable)) {
+                throw new \Exception(sprintf("Card variable empty %s", $cardVariable), self::EXCEPTION_CARD_VAR_EMPTY);
+            }
         }
-        if (empty($this->cardHolder)) {
-            throw new \Exception("Card Holder not valid", self::EXCEPTION_CARD_HOLDER_INVALID);
+        // validate card
+        if (!$this->validateCard()) {
+            throw new \Exception("Card not valid", self::EXCEPTION_CARD_INVALID);
         }
-        if (empty($this->cardCvv)) {
+        // validate cvv
+        if (!$this->validateCardCvv()) {
             throw new \Exception("Card CVV not valid", self::EXCEPTION_CARD_CVV_INVALID);
         }
-        if (empty($this->cardExpiryMonth)) {
-            throw new \Exception("Card Expiry month not valid", self::EXCEPTION_CARD_EXPIRE_MONTH_INVALID);
-        }
-        if (empty($this->cardExpiryYear)) {
-            throw new \Exception("Card Expiry year not valid", self::EXCEPTION_CARD_EXPIRE_YEAR_INVALID);
-        }
-        if (empty($this->cardHolder)) {
-            throw new \Exception("Card holder not valid", self::EXCEPTION_CARD_HOLDER_INVALID);
+        // validate card date
+        if (!$this->validateCardDate()) {
+            throw new \Exception("Card date not valid", self::EXCEPTION_CARD_CVV_INVALID);
         }
     }
 
+
+    /**
+     * Validate card including luhn.
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function validateCard()
+    {
+        $validator = CreditCard::validCreditCard(
+            $this->cardNumber,
+            Brands::mapFromOppwaToValidator($this->cardBrand)
+        );
+
+        if (!array_key_exists('valid', $validator)) {
+            return false;
+        }
+
+        return (boolean)$validator['valid'];
+    }
+
+    /**
+     * @return bool
+     */
+    public function validateCardCvv()
+    {
+        return CreditCard::validCvc($this->cardCvv, Brands::mapFromOppwaToValidator($this->cardBrand));
+    }
+
+    public function validateCardDate()
+    {
+        return CreditCard::validDate($this->cardExpiryYear, $this->cardExpiryMonth);
+    }
+    
     /**
      * @return string
      */

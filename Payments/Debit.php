@@ -9,7 +9,12 @@ use GuzzleHttp\Exception\RequestException;
 use Peach\Oppwa\Cards\AbstractCard;
 use Peach\Oppwa\Client;
 use Peach\Oppwa\ClientInterface;
+use Peach\Oppwa\ResponseJson;
 
+/**
+ * Class Debit
+ * @package Peach\Oppwa\Payments
+ */
 class Debit extends AbstractCard implements ClientInterface
 {
     /**
@@ -23,12 +28,11 @@ class Debit extends AbstractCard implements ClientInterface
 
     /**
      * PreAuthorization constructor.
-     * @param Client $client
+     * @param Client $appClient
      */
-    public function __construct(Client $client)
+    public function __construct(Client $appClient)
     {
-        $this->client = $client;
-        parent::__construct();
+        $this->client = $appClient;
     }
 
     /**
@@ -42,16 +46,16 @@ class Debit extends AbstractCard implements ClientInterface
             return (object)['result' => ['code' => $e->getCode(), 'message' => $e->getMessage()]];
         }
         
-        $client = $this->client->getClient();
+        $appClient = $this->client->getClient();
+
         try {
-            $response = $client->post($this->buildUrl(), [
+            $response = $appClient->post($this->buildUrl(), [
                 'form_params' => $this->getParams()
             ]);
-            return \GuzzleHttp\json_decode((string)$response->getBody());
+            return new ResponseJson((string)$response->getBody(), true);
         } catch (RequestException $e) {
-            return \GuzzleHttp\json_decode($e->getResponse()->getBody());
+            return new ResponseJson((string)$e->getResponse()->getBody(), false);
         }
-
     }
 
     /**
@@ -77,13 +81,15 @@ class Debit extends AbstractCard implements ClientInterface
             'card.expiryMonth' => $this->getCardExpiryMonth(),
             'card.expiryYear' => $this->getCardExpiryYear(),
             'card.cvv' => $this->getCardCvv(),
+            'paymentType' => $this->getPaymentType(),
             'amount' => $this->getAmount(),
             'currency' => $this->getCurrency(),
-            'paymentType' => $this->getPaymentType()
         ];
 
+        // save card and make sure the transaction is done correctly via the INITIAL trigger
         if ($this->isCreateRegistration()) {
             $params['createRegistration'] = true;
+            $params['recurringType'] = 'INITIAL';
         }
 
         return $params;
@@ -99,12 +105,23 @@ class Debit extends AbstractCard implements ClientInterface
 
     /**
      * @param string $paymentType
-     * @deprecated 0.0.1
      * @return $this
      */
     public function setPaymentType($paymentType)
     {
         $this->paymentType = $paymentType;
+        return $this;
+    }
+
+    /**
+     * @param $authOnly
+     * @return $this
+     */
+    public function setAuthOnly($authOnly)
+    {
+        if ($authOnly === true) {
+            $this->setPaymentType('PA');
+        }
         return $this;
     }
 

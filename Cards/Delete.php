@@ -8,6 +8,7 @@ namespace Peach\Oppwa\Cards;
 use GuzzleHttp\Exception\RequestException;
 use Peach\Oppwa\Client;
 use Peach\Oppwa\ClientInterface;
+use Peach\Oppwa\ResponseJson;
 
 /**
  * Class Delete
@@ -60,9 +61,9 @@ class Delete implements ClientInterface
 
         try {
             $response = $client->delete($this->buildUrl());
-            return \GuzzleHttp\json_decode((string)$response->getBody());
+            return new ResponseJson((string)$response->getBody(), true);
         } catch (RequestException $e) {
-            return \GuzzleHttp\json_decode($e->getResponse()->getBody());
+            return new ResponseJson((string)$e->getResponse()->getBody(), false);
         }
     }
 
