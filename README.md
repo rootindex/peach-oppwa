@@ -37,6 +37,14 @@ If you wish to use the test server.
     $client->setTestMode(true);
 ```
 
+All responses will contain an isSuccess method to check if the result was successful
+
+```php
+if ($response->isSuccess()) {
+ // was successful
+}
+```
+
 Getting a payment status.
 
 ```php
