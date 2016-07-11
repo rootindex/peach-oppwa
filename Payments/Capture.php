@@ -10,6 +10,10 @@ use Peach\Oppwa\Client;
 use Peach\Oppwa\ClientInterface;
 use Peach\Oppwa\ResponseJson;
 
+/**
+ * Class Capture
+ * @package Peach\Oppwa\Payments
+ */
 class Capture implements ClientInterface
 {
     /**
